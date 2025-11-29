@@ -4,7 +4,14 @@
 #include <QDir>
 #include <QString>
 
+struct DesktopData {
+    QString name;
+    QString type;
+    QString exec;
+};
+
 int install_file(QString, QString);
+int create_desktop_file(QString, DesktopData);
 
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent) {
@@ -22,6 +29,8 @@ MainWindow::MainWindow(QWidget *parent) :
         .name = new QLineEdit(this),
         .type = new QLineEdit(this),
     };
+
+    this->File.select->setEnabled(false);
 
     this->Process.start->setText("Install");
     this->File.select->setText("...");
@@ -62,7 +71,15 @@ void MainWindow::install(void) {
         return;
     }
 
-    install_file(this->File.name->text(), QDir::homePath()+"/.local/AppImages/");
+    if ( install_file(this->File.name->text(), QDir::homePath()+"/.local/AppImages/") == EXIT_FAILURE ||
+         create_desktop_file(QDir::homePath()+"/.local/share/applications/"+this->Info.name->text()+".desktop", {
+             .name = this->Info.name->text(),
+             .type = this->Info.type->text(),
+             .exec = QDir::homePath() + "/.local/AppImages/"+QFileInfo(this->File.name->text()).fileName(),
+         } ) == EXIT_FAILURE ) {
+            QMessageBox::warning(NULL, "Operation result", "Installation finished with errors");
+            return;
+         }
 }
 
 int install_file(QString target, QString dest) {
@@ -73,10 +90,29 @@ int install_file(QString target, QString dest) {
         }
 
     if (!QFile::copy(target, dest+QFileInfo(target).fileName())) {
-        QMessageBox::warning(NULL, "Installations error", "Error occured while copying file");
+        QMessageBox::warning(NULL, "Installations error", "Error occured while copying file\nMaybe, file already exists");
         return EXIT_FAILURE;
     }
 
     else qDebug() << "Install... ok";
+    return EXIT_SUCCESS;
+}
+
+int create_desktop_file(QString path, DesktopData dt) {
+
+    QFile desktop_file(path);
+    if (!desktop_file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::warning(NULL, "Configuration error", "Cannot create .desktop file");
+        return EXIT_FAILURE;
+    }
+
+    QTextStream out(&desktop_file);
+    out << "[Desktop Entry]\n"
+        << "Name=" << dt.name << "\n"
+        << "Exec=" << dt.exec << "\n"
+        << "Type=" << dt.type << "\n";
+
+    qDebug() << "Desktop file... ok";
+    
     return EXIT_SUCCESS;
 }
