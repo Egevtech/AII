@@ -8,6 +8,8 @@ struct DesktopData {
     QString name;
     QString type;
     QString exec;
+    bool terminal;
+    QString icon;
 };
 
 int install_file(QString, QString);
@@ -42,7 +44,7 @@ MainWindow::MainWindow(QWidget *parent) :
     this->File.name->setPlaceholderText("Path to .AppImage");
 
     this->Info.name->setPlaceholderText("Application name");
-    this->Info.type->setPlaceholderText("Application type");
+    this->Info.type->setPlaceholderText("Categories");
     this->Info.icon->setPlaceholderText("Path to icon");
 
     this->File.name->setGeometry(10, 10, 300, 30);
@@ -64,6 +66,7 @@ MainWindow::MainWindow(QWidget *parent) :
 }
 
 void MainWindow::install(void) {
+    this->Process.bar->setValue(0);
     if (!QFile::exists(this->File.name->text())) {
         QMessageBox::warning(this, "Install error", "Appimage file not found.");
         return;
@@ -79,47 +82,69 @@ void MainWindow::install(void) {
         return;
     }
 
-    if ( install_file(this->File.name->text(), QDir::homePath()+"/.local/AppImages/") == EXIT_FAILURE ||
-         create_desktop_file(QDir::homePath()+"/.local/share/applications/"+this->Info.name->text()+".desktop", {
-             .name = this->Info.name->text(),
-             .type = this->Info.type->text(),
-             .exec = QDir::homePath() + "/.local/AppImages/"+QFileInfo(this->File.name->text()).fileName(),
-         } ) == EXIT_FAILURE ) {
+    if ( install_file(this->File.name->text(), QDir::homePath()+"/.local/AppImages/") == EXIT_SUCCESS ) {
+        this->Process.bar->setValue(50);
+        if (create_desktop_file(QDir::homePath()+"/.local/share/applications/"+this->Info.name->text()+".desktop", {
+            .name = this->Info.name->text(),
+            .type = this->Info.type->text(),
+            .exec = QDir::homePath() + "/.local/AppImages/"+QFileInfo(this->File.name->text()).fileName(),
+            .terminal = this->Info.terminal->isChecked(),
+            .icon = this->Info.icon->text(),
+        } ) == EXIT_FAILURE ) {
             QMessageBox::warning(NULL, "Operation result", "Installation finished with errors");
             return;
          }
+    } else {
+        QMessageBox::warning(NULL, "Operation result", "Installation finished with errors");
+        return;
+    }
+    this->Process.bar->setValue(100);
 }
 
+// Установка файла
 int install_file(QString target, QString dest) {
-    if (!QDir(dest).exists()) 
+    // Если папка не существует
+    if (!QDir(dest).exists())
+        // Создать
         if (!QDir(QDir::homePath()).mkdir(dest)) {
-            QMessageBox::warning(NULL, "Installation error", "Error opening destination directory");
+            // Иначе ошибка
+            QMessageBox::warning(NULL, "Installation error",
+                                 "Error opening destination directory");
             return EXIT_FAILURE;
         }
 
+    // Копирование .AppImage файла
     if (!QFile::copy(target, dest+QFileInfo(target).fileName())) {
-        QMessageBox::warning(NULL, "Installations error", "Error occured while copying file\nMaybe, file already exists");
+        // Иначе ошибка
+        QMessageBox::warning(NULL, "Installations error",
+                             "Error occured while copying file\nMaybe, file already exists");
         return EXIT_FAILURE;
     }
 
+    // Удача
     return EXIT_SUCCESS;
 }
 
+// Создание ярлыка
 int create_desktop_file(QString path, DesktopData dt) {
 
+    // Создаем файл
     QFile desktop_file(path);
     if (!desktop_file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        // Иначе ошибка
         QMessageBox::warning(NULL, "Configuration error", "Cannot create .desktop file");
         return EXIT_FAILURE;
     }
 
+    // Запись в поток
     QTextStream out(&desktop_file);
     out << "[Desktop Entry]\n"
         << "Name=" << dt.name << "\n"
         << "Exec=" << dt.exec << "\n"
-        << "Type=" << dt.type << "\n";
-
-    qDebug() << "Desktop file... ok";
+        << "Categories=" << dt.type << "\n"
+        << "Terminal=" << (dt.terminal ? "True" : "False") << "\n"
+        << (dt.icon.isEmpty() ? "" : "Icon=" + dt.icon + "\n");
     
+    // Успех
     return EXIT_SUCCESS;
 }
