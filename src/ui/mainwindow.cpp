@@ -32,6 +32,8 @@ MainWindow::MainWindow(QWidget *parent) :
         .icon = new QLineEdit(this)
     };
 
+    this->setWindowTitle("Install AppImage");
+
     this->File.select->setEnabled(false);
 
     this->Process.start->setText("Install");
