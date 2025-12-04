@@ -28,6 +28,8 @@ MainWindow::MainWindow(QWidget *parent) :
     this->Info = {
         .name = new QLineEdit(this),
         .type = new QLineEdit(this),
+        .terminal = new QCheckBox("Run in terminal", this),
+        .icon = new QLineEdit(this)
     };
 
     this->File.select->setEnabled(false);
@@ -36,14 +38,18 @@ MainWindow::MainWindow(QWidget *parent) :
     this->File.select->setText("...");
 
     this->File.name->setPlaceholderText("Path to .AppImage");
+
     this->Info.name->setPlaceholderText("Application name");
     this->Info.type->setPlaceholderText("Application type");
+    this->Info.icon->setPlaceholderText("Path to icon");
 
     this->File.name->setGeometry(10, 10, 300, 30);
     this->File.select->setGeometry(320, 10, 30, 30);
 
     this->Info.name->setGeometry( 10, 50, 200, 30);
     this->Info.type->setGeometry( 220, 50, 130, 30);
+    this->Info.icon->setGeometry( 10, 90, 200, 30);
+    this->Info.terminal->setGeometry( 220, 90, 130, 30);
 
     this->Process.bar->setGeometry(10, 130, 280, 30);
     this->Process.start->setGeometry(290, 130, 60, 30);
@@ -94,7 +100,6 @@ int install_file(QString target, QString dest) {
         return EXIT_FAILURE;
     }
 
-    else qDebug() << "Install... ok";
     return EXIT_SUCCESS;
 }
 

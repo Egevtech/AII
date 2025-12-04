@@ -33,6 +33,9 @@ class MainWindow: public QMainWindow {
     struct {
         QLineEdit *name;
         QLineEdit *type;
+
+        QCheckBox *terminal;
+        QLineEdit *icon;
     } Info;
 
 public:
