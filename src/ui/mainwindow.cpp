@@ -142,6 +142,7 @@ int create_desktop_file(QString path, DesktopData dt) {
         << "Name=" << dt.name << "\n"
         << "Exec=" << dt.exec << "\n"
         << "Categories=" << dt.type << "\n"
+        << "Type=Application" << "\n"
         << "Terminal=" << (dt.terminal ? "True" : "False") << "\n"
         << (dt.icon.isEmpty() ? "" : "Icon=" + dt.icon + "\n");
     
